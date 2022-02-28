@@ -47,17 +47,15 @@ pred wellformed {
             c.y >= 10 and c.y <20
         }
     }
-    --ships are of proper length and composed of ajacent coords
+    --ships are of proper length and composed of adjacent coords
     all s: Ship | {
-        #{c: Coordinate | s.isOccupying[c] = Yes} = s.length
-        s.length > 1 => {
-            all disj c1, c2: Coordinate | {
-                (s.isOccupying[c1] and s.isOccupying[c2]) => {
-                    (c1.x - c2.x < s.length and c1.y = c2.y) or
-                    (c1.y - c2.y < s.length and c1.x = c2.x)
-                }
+        #{c: Coordinate | s.isOccupying[c] = Yes} = s.length        
+        all disj c1, c2: Coordinate | {
+            (s.isOccupying[c1] and s.isOccupying[c2]) => {
+                (c1.x - c2.x < s.length and c1.y = c2.y) or
+                (c1.y - c2.y < s.length and c1.x = c2.x)
             }
-        }
+        }        
     }
     --ships are not overlapping
     all disj s1, s2: Ship | {
@@ -91,7 +89,7 @@ pred validTransition[pre: State, post: State] {
 }
 
 pred gameOver[s : State] {
-    all of 
+    
 }
 
 pred noMove[pre: State, post: State] {
