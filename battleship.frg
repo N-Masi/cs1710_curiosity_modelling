@@ -52,8 +52,8 @@ pred wellformed {
         #{c: Coordinate | s.isOccupying[c] = Yes} = s.length        
         all disj c1, c2: Coordinate | {
             (s.isOccupying[c1] and s.isOccupying[c2]) => {
-                (c1.x - c2.x < s.length and c1.y = c2.y) or
-                (c1.y - c2.y < s.length and c1.x = c2.x)
+                (abs[c1.x - c2.x] < s.length and c1.y = c2.y) or
+                (abs[c1.y - c2.y] < s.length and c1.x = c2.x)
             }
         }        
     }
