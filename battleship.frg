@@ -29,20 +29,20 @@ sig State {
 pred wellformed {
     --ships are within the bounds of the respective board
     all c: Coordinate | {
-        (A.destroyer.isOccupying[c] or
-        A.carrier.isOccupying[c] or
-        A.battleship.isOccupying[c] or
-        A.cruiser.isOccupying[c] or
-        A.submarine.isOccupying[c]) => {
+        (A.destroyer.isOccupying[c] = Yes or
+        A.carrier.isOccupying[c] = Yes or
+        A.battleship.isOccupying[c] = Yes or
+        A.cruiser.isOccupying[c] = Yes or
+        A.submarine.isOccupying[c] = Yes) => {
             c.x >= 0 and c.x <10
             c.y >= 0 and c.y <10
         }
 
-        (B.destroyer.isOccupying[c] or
-        B.carrier.isOccupying[c] or
-        B.battleship.isOccupying[c] or
-        B.cruiser.isOccupying[c] or
-        B.submarine.isOccupying[c]) => {
+        (B.destroyer.isOccupying[c] = Yes or
+        B.carrier.isOccupying[c] = Yes or
+        B.battleship.isOccupying[c] = Yes or
+        B.cruiser.isOccupying[c] = Yes or
+        B.submarine.isOccupying[c] = Yes) => {
             c.x >= 0 and c.x <10
             c.y >= 10 and c.y <20
         }
@@ -51,7 +51,7 @@ pred wellformed {
     all s: Ship | {
         #{c: Coordinate | s.isOccupying[c] = Yes} = s.length        
         all disj c1, c2: Coordinate | {
-            (s.isOccupying[c1] and s.isOccupying[c2]) => {
+            (s.isOccupying[c1] = Yes and s.isOccupying[c2] = Yes) => {
                 (abs[c1.x - c2.x] < s.length and c1.y = c2.y) or
                 (abs[c1.y - c2.y] < s.length and c1.x = c2.x)
             }
@@ -60,8 +60,8 @@ pred wellformed {
     --ships are not overlapping
     all disj s1, s2: Ship | {
         no c: Coordinate | {
-            s1.isOccupying[c]
-            s2.isOccupying[c]
+            s1.isOccupying[c] = Yes
+            s2.isOccupying[c] = Yes
         }
     }
 }
