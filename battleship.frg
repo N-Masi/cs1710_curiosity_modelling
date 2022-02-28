@@ -23,7 +23,7 @@ one sig A, B extends Fleet {}
 
 --board is 20x10 map of attacks
 sig State {
-    board: pfunc Int -> Int -> Yes
+    board: pfunc Coordinate -> Fleet
 }
 
 pred wellformed {
@@ -77,15 +77,42 @@ pred Lengths {
 }
 
 pred init[s: State] {
-    -- all board outputs are none
-    -- one of each ship type per board
+    -- all board outputs are none    
+    all c: Coordinate | {
+        no s.board[c]
+    }
 }
 
-pred validTransition[pre: State, post: State] {
-    -- for all ships, partOfShip is exactly the same
-    -- only one Outcome changes on one board func
-    -- the board which changes alternates between turns
-    -- attack that was taken was on input ints 0<=10
+pred ATurn[s: State] {
+  #{c: Coordinate | s.board[c] = A} =
+  #{c: Coordinate | s.board[c] = B}
+}
+
+pred BTurn[s: State] {
+  #{c: Coordinate | s.board[c] = A} =
+  add[#{c: Coordinate | s.board[c] = B}, 1]
+}
+
+pred validTransition[pre: State, post: State] {    
+    --all attacks from pre state are present in post
+    all c: Coordinate | {
+        pre.board[c] = post.board[c]
+    }
+    --there's one new attack and it's valid
+    one c: Coordinate | {
+        some post.board[c]
+        no pre.board[c]
+        post.board[c] = A => {
+            ATurn[pre]
+            c.x >= 0 and c.x < 10
+            c.y >= 10 and c.y < 20
+        }
+        else {
+            BTurn[pre]
+            c.x >= 0 and c.x < 10
+            c.y >= 0 and c.y < 10
+        }
+    }
 }
 
 pred gameOver[s : State] {
