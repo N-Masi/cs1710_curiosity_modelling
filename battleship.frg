@@ -77,3 +77,32 @@ pred Lengths {
         f.submarine.length = 3
     }
 }
+
+pred init[s: State] {
+    -- all board outputs are none
+    -- one of each ship type per board
+}
+
+pred validTransition[pre: State, post: State] {
+    -- for all ships, partOfShip is exactly the same
+    -- only one Outcome changes on one board func
+    -- the board which changes alternates between turns
+    -- attack that was taken was on input ints 0<=10
+}
+
+pred gameOver[s : State] {
+    all of 
+}
+
+pred noMove[pre: State, post: State] {
+
+}
+
+-- traces of State
+run {
+    -- enforce init on some start state
+    -- enforce wellformed on all states
+    -- enforce validTransition between states
+    -- enfore gameOver on some state
+    -- enfore noMove on all states after gameOver
+} for 5 Int
