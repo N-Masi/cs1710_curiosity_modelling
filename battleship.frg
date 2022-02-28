@@ -1,20 +1,27 @@
-one sig Yes {}
+#lang forge/bsl
+
+one sig Game {
+  initialState: one State,
+  next: pfunc State -> State
+}
 
 sig Coordinate {
-    x: one Int
+    x: one Int,
     y: one Int
 }
 
+one sig Yes {}
+
 sig Ship {
-   length: one Int
+   length: one Int,
    isOccupying: pfunc Coordinate -> Yes   
 }
 
 abstract sig Fleet {
-    destroyer: one Ship
-    carrier: one Ship
-    battleship: one Ship
-    cruiser: one Ship
+    destroyer: one Ship,
+    carrier: one Ship,
+    battleship: one Ship,
+    cruiser: one Ship,
     submarine: one Ship
 }
 
@@ -59,9 +66,9 @@ pred wellformed {
     }
     --ships are not overlapping
     all disj s1, s2: Ship | {
-        no c: Coordinate | {
-            s1.isOccupying[c] = Yes
-            s2.isOccupying[c] = Yes
+        all c: Coordinate | {
+            (s1.isOccupying[c] = Yes) =>
+            no s2.isOccupying[c]
         }
     }
 }
@@ -116,18 +123,37 @@ pred validTransition[pre: State, post: State] {
 }
 
 pred gameOver[s : State] {
-    
+    some disj w, l: Fleet | {
+        all c: Coordinate | {
+            (l.destroyer.isOccupying[c] = Yes or
+            l.carrier.isOccupying[c] = Yes or
+            l.battleship.isOccupying[c] = Yes or
+            l.cruiser.isOccupying[c] = Yes or
+            l.submarine.isOccupying[c] = Yes) =>
+            s.board[c] = w
+        }
+    }
 }
 
-pred noMove[pre: State, post: State] {
+pred doNothing[pre: State, post: State] {
+    gameOver[pre] -- guard of the transition
+    pre.board = post.board -- effect of the transition
+}
 
+pred traces {
+    -- The trace starts with an initial state
+    init[Game.initialState]
+    no sprev: State | Game.next[sprev] = Game.initialState
+    -- Every transition is a valid move
+    all s: State | some Game.next[s] implies {
+        validTransition[s, Game.next[s]] or
+        doNothing[s, Game.next[s]]      
+    } 
 }
 
 -- traces of State
 run {
-    -- enforce init on some start state
-    -- enforce wellformed on all states
-    -- enforce validTransition between states
-    -- enfore gameOver on some state
-    -- enfore noMove on all states after gameOver
-} for 5 Int
+  wellformed
+  traces
+  Lengths
+} for 20 State for {next is linear}
