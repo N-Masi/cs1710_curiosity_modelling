@@ -5,24 +5,25 @@ one sig Game {
   next: pfunc State -> State
 }
 
-sig Coordinate {
-    x: one Int,
-    y: one Int
-}
-
 one sig Yes {}
 
-sig Ship {
+abstract sig Ship {
    length: one Int,
-   isOccupying: pfunc Coordinate -> Yes   
+   isOccupying: pfunc Int -> Int -> Yes   
 }
 
+sig Destroyer extends Ship {}
+sig Carrier extends Ship {}
+sig Battleship extends Ship {}
+sig Cruiser extends Ship {}
+sig Submarine extends Ship {}
+
 abstract sig Fleet {
-    destroyer: one Ship,
-    carrier: one Ship,
-    battleship: one Ship,
-    cruiser: one Ship,
-    submarine: one Ship
+    destroyer: one Destroyer,
+    carrier: one Carrier,
+    battleship: one Battleship,
+    cruiser: one Cruiser,
+    submarine: one Submarine
 }
 
 --A occupies top half of board, B bottom half
@@ -30,50 +31,50 @@ one sig A, B extends Fleet {}
 
 --board is 20x10 map of attacks
 sig State {
-    board: pfunc Coordinate -> Fleet
+    board: pfunc Int -> Int -> Fleet
 }
 
-pred wellformed {
+pred wellformed {    
     --ships are within the bounds of the respective board
-    all c: Coordinate | {
-        (A.destroyer.isOccupying[c] = Yes or
-        A.carrier.isOccupying[c] = Yes or
-        A.battleship.isOccupying[c] = Yes or
-        A.cruiser.isOccupying[c] = Yes or
-        A.submarine.isOccupying[c] = Yes) => {
-            c.x >= 0 and c.x <10
-            c.y >= 0 and c.y <10
+    all row, col: Int | {
+        (some A.destroyer.isOccupying[row][col] or
+        some A.carrier.isOccupying[row][col] or
+        some A.battleship.isOccupying[row][col] or
+        some A.cruiser.isOccupying[row][col] or
+        some A.submarine.isOccupying[row][col]) => {
+            row >= 0 and row < 5
+            col >= 0 and col < 5
         }
 
-        (B.destroyer.isOccupying[c] = Yes or
-        B.carrier.isOccupying[c] = Yes or
-        B.battleship.isOccupying[c] = Yes or
-        B.cruiser.isOccupying[c] = Yes or
-        B.submarine.isOccupying[c] = Yes) => {
-            c.x >= 0 and c.x <10
-            c.y >= 10 and c.y <20
+        (some B.destroyer.isOccupying[row][col] or
+        some B.carrier.isOccupying[row][col] or
+        some B.battleship.isOccupying[row][col] or
+        some B.cruiser.isOccupying[row][col] or
+        some B.submarine.isOccupying[row][col]) => {
+            row >= 0 and row < 5
+            col >= 5 and col < 10
         }
     }
     --ships are of proper length and composed of adjacent coords
     all s: Ship | {
-        #{c: Coordinate | s.isOccupying[c] = Yes} = s.length        
-        all disj c1, c2: Coordinate | {
-            (s.isOccupying[c1] = Yes and s.isOccupying[c2] = Yes) => {
-                (abs[c1.x - c2.x] < s.length and c1.y = c2.y) or
-                (abs[c1.y - c2.y] < s.length and c1.x = c2.x)
+        #{row, col: Int | some s.isOccupying[row][col]} = s.length        
+        all r1, r2, c1, c2: Int | {            
+            (s.isOccupying[r1][c1] = Yes and s.isOccupying[r2][c2] = Yes) => {
+                (abs[r1 - r2] < s.length and c1 = c2) or
+                (abs[c1 - c2] < s.length and r1 = r2)
             }
-        }        
+        } 
     }
     --ships are not overlapping
     all disj s1, s2: Ship | {
-        all c: Coordinate | {
-            (s1.isOccupying[c] = Yes) =>
-            no s2.isOccupying[c]
+        all row, col: Int | {
+            (s1.isOccupying[row][col] = Yes) =>
+            no s2.isOccupying[row][col]
         }
     }
 }
 
-pred Lengths {
+pred lengths {
     all f: Fleet | {
         f.destroyer.length = 2
         f.carrier.length = 5
@@ -85,52 +86,52 @@ pred Lengths {
 
 pred init[s: State] {
     -- all board outputs are none    
-    all c: Coordinate | {
-        no s.board[c]
+    all row, col: Int | {
+        no s.board[row][col]
     }
 }
 
 pred ATurn[s: State] {
-  #{c: Coordinate | s.board[c] = A} =
-  #{c: Coordinate | s.board[c] = B}
+  #{row, col: Int | s.board[row][col] = A} =
+  #{row, col: Int | s.board[row][col] = B}
 }
 
 pred BTurn[s: State] {
-  #{c: Coordinate | s.board[c] = A} =
-  add[#{c: Coordinate | s.board[c] = B}, 1]
+  #{row, col: Int | s.board[row][col] = A} =
+  add[#{row, col: Int | s.board[row][col] = B}, 1]
 }
 
 pred validTransition[pre: State, post: State] {    
     --all attacks from pre state are present in post
-    all c: Coordinate | {
-        pre.board[c] = post.board[c]
+    all row, col: Int | {
+        some pre.board[row][col] => some post.board[row][col]
     }
     --there's one new attack and it's valid
-    one c: Coordinate | {
-        some post.board[c]
-        no pre.board[c]
-        post.board[c] = A => {
+    one row, col: Int | {
+        some post.board[row][col]
+        no pre.board[row][col]
+        post.board[row][col] = A => {
             ATurn[pre]
-            c.x >= 0 and c.x < 10
-            c.y >= 10 and c.y < 20
+            row >= 0 and row < 5
+            col >= 5 and col < 10
         }
         else {
             BTurn[pre]
-            c.x >= 0 and c.x < 10
-            c.y >= 0 and c.y < 10
+            row >= 0 and row < 5
+            col >= 0 and col < 5
         }
     }
 }
 
 pred gameOver[s : State] {
     some disj w, l: Fleet | {
-        all c: Coordinate | {
-            (l.destroyer.isOccupying[c] = Yes or
-            l.carrier.isOccupying[c] = Yes or
-            l.battleship.isOccupying[c] = Yes or
-            l.cruiser.isOccupying[c] = Yes or
-            l.submarine.isOccupying[c] = Yes) =>
-            s.board[c] = w
+        all row, col: Int | {
+            (l.destroyer.isOccupying[row][col] = Yes or
+            l.carrier.isOccupying[row][col] = Yes or
+            l.battleship.isOccupying[row][col] = Yes or
+            l.cruiser.isOccupying[row][col] = Yes or
+            l.submarine.isOccupying[row][col] = Yes) =>
+            s.board[row][col] = w
         }
     }
 }
@@ -151,9 +152,14 @@ pred traces {
     } 
 }
 
+// example validStart is init for {
+   
+// }
+
 -- traces of State
 run {
   wellformed
   traces
-  Lengths
-} for 20 State for {next is linear}
+  lengths
+} for exactly 2 Destroyer, exactly 2 Carrier, exactly 2 Battleship, exactly 2 Cruiser, exactly 2 Submarine, 
+    5 Int, 3 State for {next is linear}
