@@ -5,38 +5,64 @@ one sig Game {
   next: pfunc State -> State
 }
 
+// doing this rather than a pfunc that takes two Int
+// as input allows us to count the number of Coordinates
+// that have a certain property (e.g., such as being 
+// part of a ship)
 sig Coordinate {
     x: one Int,
     y: one Int
 }
 
+// this lets us make psuedo-sets
 one sig Yes {}
 
 sig Ship {
-   length: one Int,
-   isOccupying: pfunc Coordinate -> Yes   
+   // this is a set of the coordinates part of the ship
+   isOccupying: pfunc Coordinate -> Yes,
+   // this is how many coordinates the ship takes up
+   length: one Int
 }
 
+// each player has a fleet, they're one in the same in our
+// model and each fleet has one destroyer
 abstract sig Fleet {
     destroyer: one Ship
 }
 
---A occupies left half of board, B right half
+-- A occupies left half of board, B right half
 one sig A, B extends Fleet {}
 
+-- board is 6x3 map of attacks
+sig State {
+    board: pfunc Coordinate -> Fleet
+}
+
+// all coordinates are in the board from 0-2 in the y
+// and 0-5 in the x
+pred inBoundsCoordinates {
+    no c: Coordinate | {
+        -- board is 3 high by 6 wide (two 3x3 boards lined up
+        -- horizontally to represent the two players)
+        c.y < 0 or c.y > 2 or c.x < 0 or c.x > 5
+    }
+}
+
+// each coordinate is unique
+pred noDuplicateCoordinates {
+    no disj c1, c2 : Coordinate |
+            c1.x = c2.x and c1.y = c2.y  
+}
+
+// fleets don't use the same ship
 pred differentShipsInEachFleet {
     no s: Ship | {
         A.destroyer = s and B.destroyer = s
     }
 }
 
---board is 6x3 map of attacks
-sig State {
-    board: pfunc Coordinate -> Fleet
-}
-
 pred wellformed {
-    --ships are within the bounds of the respective board
+    -- ships are within the bounds of the respective board
     all c: Coordinate | {
         -- A's ships have to be on left half
         (A.destroyer.isOccupying[c] = Yes) => {
@@ -49,7 +75,7 @@ pred wellformed {
             c.y >= 0 and c.y <3
         }
     }
-    --ships are of proper length and composed of adjacent coords
+    -- ships are of proper length and composed of adjacent coords
     all s: Ship | {
         #{c: Coordinate | s.isOccupying[c] = Yes} = s.length -- this is causing unsat     
         all disj c1, c2: Coordinate | {
@@ -68,25 +94,20 @@ pred wellformed {
                 => c.x >= 3
         }
     }
+    -- make sure we have exactly the 18 coordinates
+    -- we want for our 3x6 board
+    inBoundsCoordinates
+    noDuplicateCoordinates
+    -- make sure fleets have different instances of ships
+    differentShipsInEachFleet
 }
 
-pred Lengths {
+// make the length of ships what they actually are
+// in the boardgame Battleship
+pred lengths {
     all f: Fleet | {
         f.destroyer.length = 2
     }
-}
-
-pred inBoundsCoordinates {
-    no c: Coordinate | {
-        -- board is 3 high by 6 wide (two 3x3 boards lined up
-        -- horizontally to represent the two players)
-        c.y < 0 or c.y > 2 or c.x < 0 or c.x > 5
-    }
-}
-
-pred noDuplicateCoordinates {
-    no disj c1, c2 : Coordinate |
-            c1.x = c2.x and c1.y = c2.y  
 }
 
 pred init[s: State] {
@@ -107,12 +128,12 @@ pred BTurn[s: State] {
 }
 
 pred validTransition[pre: State, post: State] {    
-    --all attacks from pre state are present in post
+    -- all attacks from pre state are present in post
     all c: Coordinate | {
         pre.board[c] != none
             => pre.board[c] = post.board[c]
     }
-    --there's one new attack and it's valid
+    -- there's one new attack and it's valid
         -- check attacks by A
     ATurn[pre] => {
         #{c: Coordinate | {
@@ -137,18 +158,21 @@ pred validTransition[pre: State, post: State] {
     }
 }
 
+// true if a player/fleet's ships are all sunk
 pred gameOver[s : State] {
-    some disj w, l: Fleet | {
+    some f: Fleet | {
         all c: Coordinate | {
-            (l.destroyer.isOccupying[c] = Yes) =>
-            s.board[c] = w
+            (f.destroyer.isOccupying[c] = Yes) =>
+                s.board[c] = f
         }
     }
 }
 
+// replacement for validTransistion (between states)
+// if the game is over
 pred doNothing[pre: State, post: State] {
     gameOver[pre] -- guard of the transition
-    --pre.board = post.board -- effect of the transition
+    -- pre.board = post.board -- effect of the transition
     all c : Coordinate |
         pre.board[c] = post.board[c]
 }
@@ -159,17 +183,26 @@ pred traces {
     no sprev: State | Game.next[sprev] = Game.initialState
     -- Every transition is a valid move
     all s: State | some Game.next[s] implies {
-        validTransition[s, Game.next[s]]
-        or (gameOver[s] and doNothing[s, Game.next[s]]) 
+        gameOver[s] 
+            => doNothing[s, Game.next[s]]
+            else validTransition[s, Game.next[s]]
     } 
+}
+
+test expect {
+    gameOverAchievable: {
+        lengths
+        wellformed
+        traces
+        some s: State | {
+            gameOver[s]
+        }
+    } for exactly 18 Coordinate, exactly 2 Ship, 4 Int for {next is linear} is sat
 }
 
 -- traces of State
 run {
-  Lengths
-  inBoundsCoordinates
-  noDuplicateCoordinates
-  differentShipsInEachFleet
+  lengths
   wellformed
   traces
-} for 3 State, exactly 18 Coordinate, exactly 2 Ship, 4 Int for {next is linear}
+} for exactly 18 State, exactly 18 Coordinate, exactly 2 Ship, 4 Int for {next is linear}
