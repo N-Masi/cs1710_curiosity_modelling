@@ -59,13 +59,15 @@ pred wellformed {
             }
         }        
     }
-    // --ships are not overlapping
-    // all disj s1, s2: Ship | {
-    //     all c: Coordinate | {
-    //         (s1.isOccupying[c] = Yes) =>
-    //         no s2.isOccupying[c]
-    //     }
-    // }
+    -- A and B attacks confined to their sides
+    all c: Coordinate | {
+        all s: State | {
+            s.board[c] = A
+                => c.x < 3
+            s.board[c] = B
+                => c.x >= 3
+        }
+    }
 }
 
 pred Lengths {
@@ -90,7 +92,7 @@ pred noDuplicateCoordinates {
 pred init[s: State] {
     -- all board outputs are none    
     all c: Coordinate | {
-        no s.board[c]
+        s.board[c] = none
     }
 }
 
@@ -111,24 +113,28 @@ pred validTransition[pre: State, post: State] {
             => pre.board[c] = post.board[c]
     }
     --there's one new attack and it's valid
-    add[#{c: Coordinate | {
-        post.board[c] != none
-        pre.board[c] = none
-        post.board[c] = A => {
-            ATurn[pre]
-            c.x >= 0 and c.x < 3
-            c.y >= 0 and c.y < 3
-        }
-    }},
-    #{c: Coordinate | {
-        post.board[c] != none
-        pre.board[c] = none
-        post.board[c] = B => {
-            BTurn[pre]
-            c.x >= 3 and c.x < 6
-            c.y >= 0 and c.y < 3
-        }
-    }}] = 1
+        -- check attacks by A
+    ATurn[pre] => {
+        #{c: Coordinate | {
+            pre.board[c] = none and
+            post.board[c] = A
+        }} = 1 and
+        #{c: Coordinate | {
+            pre.board[c] = none and
+            post.board[c] = B 
+        }} = 0
+    }
+        -- check attacks by B
+    BTurn[pre] => {
+        #{c: Coordinate | {
+            pre.board[c] = none and
+            post.board[c] = A
+        }} = 0 and
+        #{c: Coordinate | {
+            pre.board[c] = none and
+            post.board[c] = B 
+        }} = 1
+    }
 }
 
 pred gameOver[s : State] {
@@ -154,7 +160,7 @@ pred traces {
     -- Every transition is a valid move
     all s: State | some Game.next[s] implies {
         validTransition[s, Game.next[s]]
-        //or (gameOver[s] and doNothing[s, Game.next[s]]) 
+        or (gameOver[s] and doNothing[s, Game.next[s]]) 
     } 
 }
 
@@ -166,4 +172,4 @@ run {
   differentShipsInEachFleet
   wellformed
   traces
-} for 10 State, exactly 18 Coordinate, exactly 2 Ship, 4 Int for {next is linear}
+} for 3 State, exactly 18 Coordinate, exactly 2 Ship, 4 Int for {next is linear}
