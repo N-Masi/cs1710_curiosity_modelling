@@ -59,7 +59,7 @@ pred wellformed {
     all s: Ship | {
         #{row, col: Int | some s.isOccupying[row][col]} = s.length        
         all r1, r2, c1, c2: Int | {            
-            (s.isOccupying[r1][c1] = Yes and s.isOccupying[r2][c2] = Yes) => {
+            (some s.isOccupying[r1][c1] and some s.isOccupying[r2][c2]) => {
                 (abs[r1 - r2] < s.length and c1 = c2) or
                 (abs[c1 - c2] < s.length and r1 = r2)
             }
@@ -68,7 +68,7 @@ pred wellformed {
     --ships are not overlapping
     all disj s1, s2: Ship | {
         all row, col: Int | {
-            (s1.isOccupying[row][col] = Yes) =>
+            some s1.isOccupying[row][col] =>
             no s2.isOccupying[row][col]
         }
     }
@@ -126,11 +126,11 @@ pred validTransition[pre: State, post: State] {
 pred gameOver[s : State] {
     some disj w, l: Fleet | {
         all row, col: Int | {
-            (l.destroyer.isOccupying[row][col] = Yes or
-            l.carrier.isOccupying[row][col] = Yes or
-            l.battleship.isOccupying[row][col] = Yes or
-            l.cruiser.isOccupying[row][col] = Yes or
-            l.submarine.isOccupying[row][col] = Yes) =>
+            (some l.destroyer.isOccupying[row][col] or
+            some l.carrier.isOccupying[row][col] or
+            some l.battleship.isOccupying[row][col] or
+            some l.cruiser.isOccupying[row][col] or
+            some l.submarine.isOccupying[row][col]) =>
             s.board[row][col] = w
         }
     }
