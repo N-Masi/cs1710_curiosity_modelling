@@ -106,6 +106,7 @@ pred validTransition[pre: State, post: State] {
     all row, col: Int | {
         some pre.board[row][col] => some post.board[row][col]
     }
+    #{row, col: Int | some post.board[row][col]} = add[1, #{row, col: Int | some pre.board[row][col]}]
     --there's one new attack and it's valid
     one row, col: Int | {
         some post.board[row][col]
