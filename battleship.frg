@@ -13,16 +13,12 @@ abstract sig Ship {
 }
 
 sig Destroyer extends Ship {}
-sig Carrier extends Ship {}
 sig Battleship extends Ship {}
-sig Cruiser extends Ship {}
 sig Submarine extends Ship {}
 
 abstract sig Fleet {
-    destroyer: one Destroyer,
-    carrier: one Carrier,
-    battleship: one Battleship,
-    cruiser: one Cruiser,
+    destroyer: one Destroyer,    
+    battleship: one Battleship,    
     submarine: one Submarine
 }
 
@@ -37,19 +33,15 @@ sig State {
 pred wellformed {    
     --ships are within the bounds of the respective board
     all row, col: Int | {
-        (some A.destroyer.isOccupying[row][col] or
-        some A.carrier.isOccupying[row][col] or
-        some A.battleship.isOccupying[row][col] or
-        some A.cruiser.isOccupying[row][col] or
+        (some A.destroyer.isOccupying[row][col] or        
+        some A.battleship.isOccupying[row][col] or        
         some A.submarine.isOccupying[row][col]) => {
             row >= 0 and row < 5
             col >= 0 and col < 5
         }
 
-        (some B.destroyer.isOccupying[row][col] or
-        some B.carrier.isOccupying[row][col] or
-        some B.battleship.isOccupying[row][col] or
-        some B.cruiser.isOccupying[row][col] or
+        (some B.destroyer.isOccupying[row][col] or        
+        some B.battleship.isOccupying[row][col] or     
         some B.submarine.isOccupying[row][col]) => {
             row >= 0 and row < 5
             col >= 5 and col < 10
@@ -77,10 +69,8 @@ pred wellformed {
 pred lengths {
     all f: Fleet | {
         f.destroyer.length = 2
-        f.carrier.length = 5
-        f.battleship.length = 4
-        f.cruiser.length = 3
         f.submarine.length = 3
+        f.battleship.length = 4        
     }
 }
 
@@ -127,10 +117,8 @@ pred validTransition[pre: State, post: State] {
 pred gameOver[s : State] {
     some disj w, l: Fleet | {
         all row, col: Int | {
-            (some l.destroyer.isOccupying[row][col] or
-            some l.carrier.isOccupying[row][col] or
-            some l.battleship.isOccupying[row][col] or
-            some l.cruiser.isOccupying[row][col] or
+            (some l.destroyer.isOccupying[row][col] or            
+            some l.battleship.isOccupying[row][col] or            
             some l.submarine.isOccupying[row][col]) =>
             s.board[row][col] = w
         }
@@ -162,5 +150,5 @@ run {
   wellformed
   traces
   lengths
-} for exactly 2 Destroyer, exactly 2 Carrier, exactly 2 Battleship, exactly 2 Cruiser, exactly 2 Submarine, 
+} for exactly 2 Destroyer, exactly 2 Battleship, exactly 2 Submarine, 
     5 Int, 3 State for {next is linear}
