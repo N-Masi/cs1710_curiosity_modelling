@@ -1,4 +1,4 @@
-#lang forge/bsl
+#lang forge/bsl "cm" "awbmytxbhfb9ij16"
 
 one sig Game {
   initialState: one State,
@@ -77,7 +77,9 @@ pred wellformed {
     }
     -- ships are of proper length and composed of adjacent coords
     all s: Ship | {
-        #{c: Coordinate | s.isOccupying[c] = Yes} = s.length -- this is causing unsat     
+        // ships have the proper length
+        #{c: Coordinate | s.isOccupying[c] = Yes} = s.length
+        // ships coordinates are all in a straight line and contiguous
         all disj c1, c2: Coordinate | {
             (s.isOccupying[c1] = Yes and s.isOccupying[c2] = Yes) => {
                 (abs[c1.x - c2.x] < s.length and c1.y = c2.y) or
@@ -133,7 +135,7 @@ pred validTransition[pre: State, post: State] {
         pre.board[c] != none
             => pre.board[c] = post.board[c]
     }
-    -- there's one new attack and it's valid
+    -- there's exactly one new attack between states and it's valid
         -- check attacks by A
     ATurn[pre] => {
         #{c: Coordinate | {
@@ -189,7 +191,9 @@ pred traces {
     } 
 }
 
+// checking validity of our model
 test expect {
+   
     gameOverAchievable: {
         lengths
         wellformed
@@ -198,6 +202,34 @@ test expect {
             gameOver[s]
         }
     } for exactly 18 Coordinate, exactly 2 Ship, 4 Int for {next is linear} is sat
+    
+    noAttacksAfterGameOver: {
+        lengths
+        wellformed
+        traces
+        some disj s, s2: State | {
+            gameOver[s]
+            reachable[s2, s, Game.next]
+            #{c: Coordinate | s2.board[c] != none} = #{c: Coordinate | s.board[c] != none}
+                -- if we had sets I would use set comprehension above to ensure the sets
+                -- of moves were exactly the same, but for now the cardinality of the sets is
+                -- a good approximation
+        }
+    } for exactly 18 Coordinate, exactly 2 Ship, 4 Int for {next is linear} is unsat
+
+    noOverlappingShips: {
+        -- we modeled this property to be derived from only using one ship per fleet
+        -- and keeping them on their respective sides of the board, but here we check it
+        lengths
+        wellformed
+        traces
+        some c: Coordinate {
+            some disj s1, s2: Ship | {
+                s1.isOccupying[c] = Yes and s2.isOccupying[c] = Yes
+            }
+        }
+    } for exactly 18 Coordinate, exactly 2 Ship, 4 Int for {next is linear} is unsat
+
 }
 
 -- traces of State
@@ -205,4 +237,4 @@ run {
   lengths
   wellformed
   traces
-} for exactly 18 State, exactly 18 Coordinate, exactly 2 Ship, 4 Int for {next is linear}
+} for exactly 19 State, exactly 18 Coordinate, exactly 2 Ship, 4 Int for {next is linear}
